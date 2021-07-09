@@ -27,14 +27,22 @@ $ pg2sqlite -h
 
 Options:
 
-  -h, --help                   display help information
-      --pg-url                *Postgres connection string (i.e. postgres://localhost:5432/mydb)
-      --sqlite-file           *Path to SQLite database file (i.e. mydatabase.db)
-  -t, --table                 *Name of table to export
-      --confirm                Confirm prompts with Y, useful if used in script
-      --ignore-columns         comma-separated list of columns to ignore
-      --drop-table-if-exists   DANGER: Drop target table if it already exists
-```
+  -h, --help
+      display help information
+  --pg-url
+      *Postgres connection string (i.e. postgres://localhost:5432/mydb)
+  --sqlite-file
+      *Path to SQLite database file (i.e. mydatabase.db)
+  -t, --table
+      *Name of table to export
+  --ignore-columns
+      comma-separated list of columns to ignore
+  --drop-table-if-exists
+      DANGER: Drop target table if it already exists
+  --confirm
+      Confirm prompts with Y, useful if used in script
+  --verify
+      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2```
 
 ### Example
 
@@ -109,8 +117,6 @@ in the SQLite table.
 ### TODOs
 
 - [ ] Create SQLite file if it doesn't exist
-- [ ] Silence confirmations
-- [ ] Offer verification option (number of rows)
 
 
 ### Warnings

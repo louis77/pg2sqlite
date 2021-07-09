@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"log"
 	"os"
 	"strings"
 )
@@ -143,4 +144,29 @@ func InsertRow(tablename string, vals []interface{}) error {
 	}
 
 	return nil
+}
+
+func CountRows(tablename string) (uint64, error) {
+	rows, err := sqliteDb.Query(fmt.Sprintf("SELECT COUNT(*) FROM %s", tablename))
+	if err != nil {
+		return 0, err
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(rows)
+
+	if !rows.Next() {
+		return 0, fmt.Errorf("unable to count rows, no estimate returned")
+	}
+
+	var rowcount uint64
+	if err := rows.Scan(&rowcount); err != nil {
+		return 0, fmt.Errorf("unable to count rows: %w", err)
+	}
+
+	return rowcount, nil
 }

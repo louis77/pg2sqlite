@@ -18,6 +18,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/gosuri/uiprogress"
 	"github.com/mkideal/cli"
@@ -25,6 +26,12 @@ import (
 	"os"
 	"strings"
 )
+
+//go:embed VERSION
+var Version string
+
+const AppName = "pg2sqlite"
+const Copyright = "Copyright © Louis Brauer <louis@brauer.family>"
 
 type stringListDecoder struct {
 	List []string
@@ -37,12 +44,16 @@ func (d *stringListDecoder) Decode(s string) error {
 
 type argT struct {
 	cli.Helper
-	PGURL             string            `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
-	SLFile            string            `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
-	Tablename         string            `cli:"*t,table" usage:"Name of table to export"`
-	Confirm           bool              `cli:"confirm" usage:"Confirm prompts with Y, useful if used in script" default:""`
+	// Required
+	PGURL     string `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
+	SLFile    string `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
+	Tablename string `cli:"*t,table" usage:"Name of table to export"`
+	// Change behaviour
 	IgnoreColumns     stringListDecoder `cli:"ignore-columns" usage:"comma-separated list of columns to ignore" default:""`
 	DropTableIfExists bool              `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
+	// Comfort options
+	Confirm bool `cli:"confirm" usage:"Confirm prompts with Y, useful if used in script" default:""`
+	Verify  bool `cli:"verify" usage:"Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2" default:"false"`
 }
 
 func (argv *argT) AutoHelp() bool {
@@ -87,25 +98,27 @@ func run(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	rowcount, err := EstimateRows(schema.Name)
+	estimatedRows, err := EstimateRows(schema.Name)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Printf("Estimated row count: %d\n", rowcount)
+	fmt.Printf("Estimated row count: %d\n", estimatedRows)
 
 	uiprogress.Start()
-	bar := uiprogress.AddBar(int(rowcount))
+	bar := uiprogress.AddBar(int(estimatedRows))
 	bar.AppendCompleted()
 	bar.PrependElapsed()
 
 	rowChan := make(chan []interface{})
 	finished := make(chan bool)
+	transferredRows := uint64(0)
 
 	go func() {
 		for row := range rowChan {
 			if err := InsertRow(schema.Name, row); err != nil {
 				log.Fatalln("error inserting a row:", err)
 			}
+			transferredRows++
 			bar.Incr()
 		}
 		finished <- true
@@ -119,6 +132,22 @@ func run(ctx *cli.Context) error {
 	}()
 
 	<-finished
+	fmt.Println("Finished.")
+	fmt.Println()
+
+	if argv.Verify {
+		fmt.Println("Verifying number of rows, this could take a while...")
+		rowcount, err := CountRows(schema.Name)
+		if err != nil {
+			log.Fatalln("Unable to verify rowcount:", err)
+		}
+		if rowcount != transferredRows {
+			log.Println("VERIFICATION FAILED")
+			log.Printf("Discrepancy: counted rows: %d, rows in SQLite table: %d", transferredRows, rowcount)
+			os.Exit(2)
+		}
+		fmt.Println("OK, row counts match")
+	}
 
 	if err := CloseSqlite(); err != nil {
 		log.Println("Unable to close Sqlite database", err)
@@ -128,5 +157,8 @@ func run(ctx *cli.Context) error {
 }
 
 func main() {
+	cli.SetUsageStyle(cli.DenseManualStyle)
+	fmt.Printf("%s v%s\n%s\n\n", AppName, Version, Copyright)
+
 	os.Exit(cli.Run(new(argT), run))
 }
