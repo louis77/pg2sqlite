@@ -16,13 +16,7 @@ $ go get -u github.com/louis77/pg2sqlite
 
 ### Download pre-built binaries
 
-| Platform | Intel/AMD | ARM |
-| -------- | ----- | --- |
-| MacOS | [Intel](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_darwin-amd64.gz) | [M1](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_darwin-arm64.gz) |
-| Linux | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_linux-amd64.gz) | [arm](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_linux-arm64.gz) |
-| FreeBSD | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_freebsd-amd64.gz) | [arm64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_freebsd-arm.gz) |
-| Windows | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_windows-amd64.exe.zip) | [arm](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_windows-arm.exe.zip) |
-
+You can download pre-built binaries (AMD64 and ARM) for **Linux, macOS, Window and FreeBSD** in the [RELEASES](https://github.com/louis77/pg2sqlite/releases) section.
 
 ## Usage
 
