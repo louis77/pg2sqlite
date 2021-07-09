@@ -21,6 +21,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func AskYesNo(prompt string) bool {
@@ -38,4 +40,30 @@ func AskYesNo(prompt string) bool {
 			return false
 		}
 	}
+}
+
+func PrintSchema(schema *TableSchema) {
+	fmt.Printf("Schema of table \"%s\"\n", schema.Name)
+
+	// Find length of widest column
+	maxColLength := 0
+	maxTypeLength := 0
+
+	for _, col := range schema.Cols {
+		if l := len(col.Name); maxColLength < l {
+			maxColLength = l
+		}
+		if l := len(col.Type); maxTypeLength < l {
+			maxTypeLength = l
+		}
+	}
+
+	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s | %s\n"
+	fmt.Printf(tmpl, "Column", "Type", "Ignore") // Header
+	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength), strings.Repeat("-", 6))
+
+	for _, col := range schema.Cols {
+		fmt.Printf(tmpl, col.Name, col.Type, map[bool]string{true: "Yes", false: "No"}[col.Ignored])
+	}
+	fmt.Println()
 }

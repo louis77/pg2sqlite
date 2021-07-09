@@ -31,6 +31,7 @@ Options:
       --pg-url                *Postgres connection string (i.e. postgres://localhost:5432/mydb)
       --sqlite-file           *Path to SQLite database file (i.e. mydatabase.db)
       --table                 *Name of table to export
+      --ignore-columns         comma-separated list of columns to ignore
       --drop-table-if-exists   DANGER: Drop target table if it already exists
 ```
 
@@ -39,18 +40,19 @@ Options:
 ```shell
 $ pg2sqlite --pg-url postgres://localhost:5432/defaultdb \
             --sqlite-file mysqlite.db \
-            --table daily_sales
+            --table daily_sales \
+            --ignore-columns raw_hash
 
 Schema of table "daily_sales"
-Column                     | Type                    
--------------------------- | ------------------------
-reference_id               | integer                 
-checkin                    | date                    
-checkout                   | date                    
-price                      | numeric                 
-currency                   | character               
-ratecode                   | character varying       
-ts                         | timestamp with time zone
+Column                     | Type                     | Ignore
+-------------------------- | ------------------------ | ------
+reference_id               | integer                  | No
+checkin                    | date                     | No
+checkout                   | date                     | No
+price                      | numeric                  | No
+raw_hash                   | character                | Yes
+currency                   | character                | No
+ts                         | timestamp with time zone | No
              
 Creating Table statement:
 CREATE TABLE daily_sales (         
@@ -58,12 +60,14 @@ CREATE TABLE daily_sales (
         checkin TEXT, 
         checkout TEXT, 
         price REAL, 
-        currency TEXT, 
-        ratecode TEXT, 
+        currency TEXT,  
         ts TEXT )
 Does this look ok? (Y/N) y
 
 Estimated row count: 50042260
+Loading data with this statement:
+SELECT "reference_id", "checkin", "checkout", "price", "currency", "external_id", "ts" FROM results_y2021m02 T
+
   24s [==>-----------------------------------------------------------------]   3%
 
 Finished.

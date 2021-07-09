@@ -74,6 +74,9 @@ func BuildCreateTableSQL(schema *TableSchema) (string, error) {
 	}
 
 	for _, col := range schema.Cols {
+		if col.Ignored {
+			continue
+		}
 		newType, err := mapColumnType(col.Type)
 		if err != nil {
 			return "", fmt.Errorf("error during column type mapping: %w", err)

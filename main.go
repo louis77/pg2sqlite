@@ -23,20 +23,25 @@ import (
 	"github.com/mkideal/cli"
 	"log"
 	"os"
+	"strings"
 )
 
-// A Postgres to Sqlite exporter/converter.
-// CLI Flags:
-// - PG URL
-// - SQLite File
-// - Source Table name
+type stringListDecoder struct {
+	List []string
+}
+
+func (d *stringListDecoder) Decode(s string) error {
+	d.List = strings.Split(s, ",")
+	return nil
+}
 
 type argT struct {
 	cli.Helper
-	PGURL             string `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
-	SLFile            string `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
-	Tablename         string `cli:"*table" usage:"Name of table to export"`
-	DropTableIfExists bool   `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
+	PGURL             string            `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
+	SLFile            string            `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
+	Tablename         string            `cli:"*table" usage:"Name of table to export"`
+	IgnoreColumns     stringListDecoder `cli:"ignore-columns" usage:"comma-separated list of columns to ignore" default:""`
+	DropTableIfExists bool              `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
 }
 
 func (argv *argT) AutoHelp() bool {
@@ -54,7 +59,7 @@ func run(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	schema, err := FetchSchema(argv.Tablename)
+	schema, err := FetchSchema(argv.Tablename, argv.IgnoreColumns.List)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,7 +110,7 @@ func run(ctx *cli.Context) error {
 	}()
 
 	go func() {
-		if err := LoadData(schema.Name, rowChan); err != nil {
+		if err := LoadData(schema, rowChan); err != nil {
 			log.Println("Error while loading data", err)
 			finished <- true
 		}

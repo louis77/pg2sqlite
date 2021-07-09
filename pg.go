@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
-	"strconv"
 	"strings"
 )
 
@@ -35,8 +34,9 @@ type TableSchema struct {
 }
 
 type TableColumn struct {
-	Name string
-	Type string
+	Name    string
+	Type    string
+	Ignored bool
 }
 
 func ValidatePG(connStr string) error {
@@ -48,7 +48,7 @@ func ValidatePG(connStr string) error {
 	return nil
 }
 
-func FetchSchema(tablename string) (*TableSchema, error) {
+func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error) {
 	rows, err := pgConn.Query(context.Background(),
 		"SELECT column_name, data_type FROM information_schema.columns "+
 			"WHERE table_name = $1 "+
@@ -73,8 +73,9 @@ func FetchSchema(tablename string) (*TableSchema, error) {
 			return nil, fmt.Errorf("Unable to scan columns from Postgres table: %w\n", err)
 		}
 		tableSchema.Cols = append(tableSchema.Cols, TableColumn{
-			Name: columnName,
-			Type: dataType,
+			Name:    columnName,
+			Type:    dataType,
+			Ignored: Contains(ignoredColumns, columnName),
 		})
 		colCount++
 	}
@@ -85,35 +86,19 @@ func FetchSchema(tablename string) (*TableSchema, error) {
 	return &tableSchema, nil
 }
 
-func PrintSchema(schema *TableSchema) {
-	fmt.Printf("Schema of table \"%s\"\n", schema.Name)
-
-	// Find length of widest column
-	maxColLength := 0
-	maxTypeLength := 0
-
+func LoadData(schema *TableSchema, out chan []interface{}) error {
+	var colListArray []string
 	for _, col := range schema.Cols {
-		if l := len(col.Name); maxColLength < l {
-			maxColLength = l
+		if col.Ignored {
+			continue
 		}
-		if l := len(col.Type); maxTypeLength < l {
-			maxTypeLength = l
-		}
+		colListArray = append(colListArray, fmt.Sprintf(`"%s"`, col.Name))
 	}
 
-	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s\n"
-	fmt.Printf(tmpl, "Column", "Type") // Header
-	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength))
-
-	for _, col := range schema.Cols {
-		fmt.Printf(tmpl, col.Name, col.Type)
-	}
-
-}
-
-func LoadData(tablename string, out chan []interface{}) error {
-	sqlTmpl := "SELECT * FROM %s T"
-	sqlStmt := fmt.Sprintf(sqlTmpl, tablename)
+	sqlStmt := fmt.Sprintf("SELECT %s FROM %s T", strings.Join(colListArray, ", "), schema.Name)
+	fmt.Println("Loading data with this statement:")
+	fmt.Println(sqlStmt)
+	fmt.Println()
 
 	rows, err := pgConn.Query(context.Background(), sqlStmt)
 	if err != nil {
