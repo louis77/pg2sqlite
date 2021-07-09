@@ -1,14 +1,26 @@
 # pg2sqlite
 
-CLI tool to migrate a table from a PostgreSQL database to a SQLite3 database.
+`pg2sqlite` can migrate tables from PostgreSQL to SQLite3.
 
-### Installation
+## Installation
+
+### From source
 
 ```shell
 $ go get -u github.com/louis77/pg2sqlite
 ```
 
-### Usage
+### Download pre-built binaries
+
+| Platform | Intel/AMD | ARM |
+| -------- | ----- | --- |
+| MacOS | [Intel](https://pg2sqlite.surge.sh/pg2sqlite-darwin-amd64.gz) | [M1](https://pg2sqlite.surge.sh/pg2sqlite-darwin-arm64.gz) |
+| Linux | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-linux-amd64.gz) | [arm](https://pg2sqlite.surge.sh/pg2sqlite-linux-arm64.gz) |
+| FreeBSD | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-freebsd-amd64.gz) | [arm64](https://pg2sqlite.surge.sh/pg2sqlite-freebsd-arm.gz) |
+| Windows | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-windows-amd64.exe.zip) | [arm](https://pg2sqlite.surge.sh/pg2sqlite-windows-arm.exe.zip) |
+
+
+## Usage
 
 ```shell
 $ pg2sqlite -h
@@ -16,8 +28,8 @@ $ pg2sqlite -h
 Options:
 
   -h, --help                   display help information
-      --pg-url                *Postgres connection string
-      --sqlite-file           *Path to SQLite database
+      --pg-url                *Postgres connection string (i.e. postgres://localhost:5432/mydb)
+      --sqlite-file           *Path to SQLite database file (i.e. mydatabase.db)
       --table                 *Name of table to export
       --drop-table-if-exists   DANGER: Drop target table if it already exists
 ```
@@ -52,19 +64,56 @@ CREATE TABLE daily_sales (
 Does this look ok? (Y/N) y
 
 Estimated row count: 50042260
-  24s [--------------------------------------------------------------------]   0%
+  24s [==>-----------------------------------------------------------------]   3%
 
 Finished.
 
 $ 
 ```
 
-## Details
+## Release history
 
-### General
+- 1.0.0
+    - Initial version     
+
+## Details
 
 pg2sqlite works with a single connection to PostgreSQL and SQLite. To keep memory consumption low, rows are transferred
 without buffering.
+
+### Workflow
+
+`pg2sqlite` will try to complete these steps in the following order:
+
+1. Validate the connection to Postgres
+2. Validate the existence of the specified SQLite file
+3. Fetch the table schema from Postgres
+4. Display a `CREATE TABLE` statement for the SQLite table
+5. Ask for your confirmation (can be silenced)
+6. Drop target table if it already exists
+7. Estimate number of rows in the Postgres table for progress display
+8. Queries source table rows and inserts them while they come in
+
+#### `pg2sqlite` doesn't do:
+
+`pg2sqlite` created the bare table with its columns.
+No primary keys, foreign keys, constraints or indexes are created
+in the SQLite table.
+
+
+### TODOs
+
+- [ ] Create SQLite file if it doesn't exist
+- [ ] Silence confirmations
+- [ ] Offer verification option (number of rows)
+
+
+### Warnings
+
+Be careful with the `--drop-table-if-exists` option. It *will* drop your SQLite-table without
+confirmation. This is useful if you use `pg2sqlite` in a scripted context. By default, if 
+the table already exists in SQLite, `pg2sqlite` will terminte the process with
+an error message to avoid data loss.
 
 ### Type mapping
 
@@ -75,18 +124,12 @@ Here is a table of explicit mappings:
 
 |PG Type | SQLite Type|
 |--------|------------|
-|integer | INTEGER |
-|smallint| INTEGER |
+|integer, smallint | INTEGER |
 |numeric|REAL|
-|date|TEXT|
-|array|TEXT|
-|character|TEXT|
-|character varying|TEXT|
-|timestamp with time zone|TEXT|
 |All other types|TEXT|
 
-## LICENSE
+## License
 
-© 2021 Louis Brauer
+Copyright © 2021 by Louis Brauer.
 
-GNU GPLv3. See [LICENSE](./LICENSE).
+Software released under GNU GPLv3 license. See [LICENSE](./LICENSE).

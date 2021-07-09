@@ -33,8 +33,8 @@ import (
 
 type argT struct {
 	cli.Helper
-	PGURL             string `cli:"*pg-url" usage:"Postgres connection string"`
-	SLFile            string `cli:"*sqlite-file" usage:"Path to SQLite database"`
+	PGURL             string `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
+	SLFile            string `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
 	Tablename         string `cli:"*table" usage:"Name of table to export"`
 	DropTableIfExists bool   `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
 }
@@ -65,7 +65,7 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Creating Table statement:\n%s\n", createTableSQL)
+	fmt.Printf("Will create SQLite table with the following statement:\n%s\n\n", createTableSQL)
 	if !AskYesNo("Does this look ok?") {
 		log.Fatal("Cancelled")
 	}
