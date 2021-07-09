@@ -22,7 +22,7 @@ $ go get -u git.sr.ht/~louis77/pg2sqlite
 
 ## Usage
 
-```shell
+```
 $ pg2sqlite -h
 
 Options:
@@ -42,11 +42,12 @@ Options:
   --confirm
       Confirm prompts with Y, useful if used in script
   --verify
-      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2```
+      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2
+ ```
 
 ### Example
 
-```shell
+```
 $ pg2sqlite --pg-url postgres://localhost:5432/defaultdb \
             --sqlite-file mysqlite.db \
             --table daily_sales \
@@ -102,14 +103,15 @@ without buffering.
 2. Validate the existence of the specified SQLite file
 3. Fetch the table schema from Postgres
 4. Display a `CREATE TABLE` statement for the SQLite table
-5. Ask for your confirmation (can be silenced)
-6. Drop target table if it already exists
+5. Ask for your confirmation (can be suppressed with `--confirm`)
+6. Drop target table if it already exists (if `--drop-table-if-exists` is set)
 7. Estimate number of rows in the Postgres table for progress display
-8. Queries source table rows and inserts them while they come in
+8. Load source table rows and inserts them while they come in
+9. Verify that the number of inserted rows equals the number if loaded rows (if `--verify` is set)
 
 #### `pg2sqlite` doesn't do:
 
-`pg2sqlite` created the bare table with its columns.
+`pg2sqlite` creates the bare table with its columns.
 No primary keys, foreign keys, constraints or indexes are created
 in the SQLite table.
 
