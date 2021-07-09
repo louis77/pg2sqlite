@@ -1,8 +1,8 @@
 # pg2sqlite
 
 [![Go Report Card](https://goreportcard.com/badge/louis77/pg2sqlite)](https://goreportcard.com/report/louis77/pg2sqlite)
-[![License](https://img.shields.io/github/license/louis77/pg2sqlite)](https://img.shields.io/github/license/louis77/pg2sqlite)
-[![Download](https://img.shields.io/github/downloads/louis77/pg2sqlite/total)](https://img.shields.io/github/downloads/louis77/pg2sqlite/total)
+![License](https://img.shields.io/github/license/louis77/pg2sqlite)
+![Downloads](https://img.shields.io/github/downloads/louis77/pg2sqlite/total)
 
 `pg2sqlite` can migrate tables from PostgreSQL to SQLite3.
 
@@ -11,7 +11,7 @@
 ### From source
 
 ```shell
-$ go get -u git.sr.ht/~louis77/pg2sqlite
+$ go get -u github.com/louis77/pg2sqlite
 ```
 
 ### Download pre-built binaries
