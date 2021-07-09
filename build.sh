@@ -37,7 +37,3 @@ for K in "${!goos[@]}"; do
   env GOOS="$current_os" GOARCH="$current_arch" go build -o $builddir/"$product"
   compress "$current_os" $builddir/"$product"
 done
-
-echo "Uploading to surge"
-
-surge $builddir pg2sqlite.surge.sh
