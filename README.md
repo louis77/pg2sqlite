@@ -30,7 +30,8 @@ Options:
   -h, --help                   display help information
       --pg-url                *Postgres connection string (i.e. postgres://localhost:5432/mydb)
       --sqlite-file           *Path to SQLite database file (i.e. mydatabase.db)
-      --table                 *Name of table to export
+  -t, --table                 *Name of table to export
+      --confirm                Confirm prompts with Y, useful if used in script
       --ignore-columns         comma-separated list of columns to ignore
       --drop-table-if-exists   DANGER: Drop target table if it already exists
 ```

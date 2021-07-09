@@ -39,7 +39,8 @@ type argT struct {
 	cli.Helper
 	PGURL             string            `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
 	SLFile            string            `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
-	Tablename         string            `cli:"*table" usage:"Name of table to export"`
+	Tablename         string            `cli:"*t,table" usage:"Name of table to export"`
+	Confirm           bool              `cli:"confirm" usage:"Confirm prompts with Y, useful if used in script" default:""`
 	IgnoreColumns     stringListDecoder `cli:"ignore-columns" usage:"comma-separated list of columns to ignore" default:""`
 	DropTableIfExists bool              `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
 }
@@ -71,7 +72,8 @@ func run(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 	fmt.Printf("Will create SQLite table with the following statement:\n%s\n\n", createTableSQL)
-	if !AskYesNo("Does this look ok?") {
+
+	if !argv.Confirm && !AskYesNo("Does this look ok?") {
 		log.Fatal("Cancelled")
 	}
 
