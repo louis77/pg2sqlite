@@ -1,4 +1,4 @@
-module git.sr.ht/~louis77/pg2sqlite
+module github.com/louis77/pg2sqlite
 
 go 1.16
 

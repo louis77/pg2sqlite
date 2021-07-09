@@ -140,7 +140,7 @@ func InsertRow(tablename string, vals []interface{}) error {
 		return fmt.Errorf("unable to determine affected rows: %w", err)
 	}
 	if affected != 1 {
-		return fmt.Errorf("no row affected, this should not happend")
+		return fmt.Errorf("no row affected, this should not happen")
 	}
 
 	return nil

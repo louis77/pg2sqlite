@@ -2,6 +2,7 @@
 
 builddir=build
 name=pg2sqlite
+version=$(cat VERSION)
 
 declare -a goos=(  darwin darwin linux linux windows windows freebsd freebsd )
 declare -a goarch=(amd64  arm64  amd64 arm64 amd64   arm     amd64   arm     )
@@ -30,7 +31,7 @@ echo "Building pg2sqlite ..."
 for K in "${!goos[@]}"; do
   current_os=${goos[$K]}
   current_arch=${goarch[$K]}
-  product=$name-$current_os-$current_arch
+  product="$name"_"$version"_$current_os-$current_arch
   if [ "$current_os" == "windows" ]; then product=$product.exe; fi
   echo Build "$K" : "$product"
   env GOOS="$current_os" GOARCH="$current_arch" go build -o $builddir/"$product"

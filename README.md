@@ -1,5 +1,9 @@
 # pg2sqlite
 
+[![Go Report Card](https://goreportcard.com/badge/louis77/pg2sqlite)](https://goreportcard.com/report/louis77/pg2sqlite)
+[![License](https://img.shields.io/github/license/louis77/pg2sqlite)](https://img.shields.io/github/license/louis77/pg2sqlite)
+[![Download](https://img.shields.io/github/downloads/louis77/pg2sqlite/total)](https://img.shields.io/github/downloads/louis77/pg2sqlite/total)
+
 `pg2sqlite` can migrate tables from PostgreSQL to SQLite3.
 
 ## Installation
@@ -14,10 +18,10 @@ $ go get -u git.sr.ht/~louis77/pg2sqlite
 
 | Platform | Intel/AMD | ARM |
 | -------- | ----- | --- |
-| MacOS | [Intel](https://pg2sqlite.surge.sh/pg2sqlite-darwin-amd64.gz) | [M1](https://pg2sqlite.surge.sh/pg2sqlite-darwin-arm64.gz) |
-| Linux | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-linux-amd64.gz) | [arm](https://pg2sqlite.surge.sh/pg2sqlite-linux-arm64.gz) |
-| FreeBSD | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-freebsd-amd64.gz) | [arm64](https://pg2sqlite.surge.sh/pg2sqlite-freebsd-arm.gz) |
-| Windows | [amd64](https://pg2sqlite.surge.sh/pg2sqlite-windows-amd64.exe.zip) | [arm](https://pg2sqlite.surge.sh/pg2sqlite-windows-arm.exe.zip) |
+| MacOS | [Intel](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_darwin-amd64.gz) | [M1](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_darwin-arm64.gz) |
+| Linux | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_linux-amd64.gz) | [arm](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_linux-arm64.gz) |
+| FreeBSD | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_freebsd-amd64.gz) | [arm64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_freebsd-arm.gz) |
+| Windows | [amd64](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_windows-amd64.exe.zip) | [arm](https://pg2sqlite.surge.sh/pg2sqlite_1.0.0_windows-arm.exe.zip) |
 
 
 ## Usage
