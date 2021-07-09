@@ -7,7 +7,7 @@
 ### From source
 
 ```shell
-$ go get -u github.com/louis77/pg2sqlite
+$ go get -u git.sr.ht/~louis77/pg2sqlite
 ```
 
 ### Download pre-built binaries
