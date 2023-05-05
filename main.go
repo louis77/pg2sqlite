@@ -20,11 +20,12 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"github.com/gosuri/uiprogress"
-	"github.com/mkideal/cli"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/gosuri/uiprogress"
+	"github.com/mkideal/cli"
 )
 
 //go:embed VERSION

@@ -87,6 +87,8 @@ $
 
 - 1.0.0
     - Initial version     
+- 1.0.1
+    - Update to Go 1.20 and latest package versions
 
 ## Details
 
@@ -141,6 +143,6 @@ Here is a table of explicit mappings:
 
 ## License
 
-Copyright © 2021 by Louis Brauer.
+Copyright © 2021-2023 by Louis Brauer.
 
 Software released under GNU GPLv3 license. See [LICENSE](./LICENSE).
