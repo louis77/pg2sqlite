@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/samber/lo"
 )
 
 type typeMap map[string]string
@@ -70,7 +71,7 @@ func ValidateSqlite(filename, tablename string, ignoreExistingTable bool) error 
 	return nil
 }
 
-func BuildCreateTableSQL(schema *TableSchema, strict bool) (string, error) {
+func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK bool) (string, error) {
 	newSchema := TableSchema{
 		Name: schema.Name,
 	}
@@ -83,17 +84,31 @@ func BuildCreateTableSQL(schema *TableSchema, strict bool) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("error during column type mapping: %w", err)
 		}
-		newSchema.Cols = append(newSchema.Cols, TableColumn{Name: col.Name, Type: newType})
+		newSchema.Cols = append(newSchema.Cols, TableColumn{Name: col.Name, Type: newType, PrimaryKey: col.PrimaryKey})
 	}
 
-	sqlTmpl := "CREATE TABLE " + schema.Name + " ( %s )"
+	sqlTmpl := "CREATE TABLE " + formatTableName(schema.Name) + " ( %s )"
 	if strict {
 		sqlTmpl += " STRICT"
 	}
 	var colStrings []string
 	for _, col := range newSchema.Cols {
-		colStrings = append(colStrings, "\t"+col.Name+" "+col.Type)
+		colStrings = append(colStrings, "\t\""+col.Name+"\" "+col.Type)
 	}
+
+	if !omitPK {
+		pkContraint := lo.FilterMap(newSchema.Cols, func(col TableColumn, index int) (string, bool) {
+			if !col.PrimaryKey {
+				return "", false
+			}
+			return col.Name, true
+		})
+
+		if len(pkContraint) > 0 {
+			colStrings = append(colStrings, "\tPRIMARY KEY ("+strings.Join(pkContraint, ", ")+")")
+		}
+	}
+
 	sqlCreateString := fmt.Sprintf(sqlTmpl, strings.Join(colStrings, ", \n"))
 
 	return sqlCreateString, nil
@@ -111,7 +126,7 @@ func mapColumnType(origType string) (string, error) {
 }
 
 func DropTable(tablename string) error {
-	_, err := sqliteDb.Exec("DROP TABLE IF EXISTS " + tablename)
+	_, err := sqliteDb.Exec("DROP TABLE IF EXISTS " + formatTableName(tablename))
 	if err != nil {
 		return fmt.Errorf("unable to drop sqlite table: %w", err)
 	}
@@ -134,7 +149,7 @@ func CloseSqlite() error {
 func InsertRow(tx *sql.Tx, tablename string, vals []interface{}) error {
 	placeholder := strings.Join(strings.Split(strings.Repeat("?", len(vals)), ""), ", ")
 
-	result, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%s)", tablename, placeholder), vals...)
+	result, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%s)", formatTableName(tablename), placeholder), vals...)
 	if err != nil {
 		return err
 	}
@@ -151,7 +166,7 @@ func InsertRow(tx *sql.Tx, tablename string, vals []interface{}) error {
 }
 
 func CountRows(tablename string) (uint64, error) {
-	rows, err := sqliteDb.Query(fmt.Sprintf("SELECT COUNT(*) FROM %s", tablename))
+	rows, err := sqliteDb.Query(fmt.Sprintf("SELECT COUNT(*) FROM %s", formatTableName(tablename)))
 	if err != nil {
 		return 0, err
 	}
@@ -173,4 +188,8 @@ func CountRows(tablename string) (uint64, error) {
 	}
 
 	return rowcount, nil
+}
+
+func formatTableName(table string) string {
+	return fmt.Sprintf("\"%s\"", table)
 }

@@ -23,6 +23,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 func AskYesNo(prompt string) bool {
@@ -43,7 +45,7 @@ func AskYesNo(prompt string) bool {
 }
 
 func PrintSchema(schema *TableSchema) {
-	fmt.Printf("Schema of table \"%s\"\n", schema.Name)
+	fmt.Printf("Schema of table \"%s\":\n", schema.Name)
 
 	// Find length of widest column
 	maxColLength := 0
@@ -58,12 +60,12 @@ func PrintSchema(schema *TableSchema) {
 		}
 	}
 
-	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s | %s\n"
-	fmt.Printf(tmpl, "Column", "Type", "Ignore") // Header
-	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength), strings.Repeat("-", 6))
+	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s | %s | %s\n"
+	fmt.Printf(tmpl, "Column", "Type", "PK ", "Ignore") // Header
+	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength), strings.Repeat("-", 3), strings.Repeat("-", 6))
 
 	for _, col := range schema.Cols {
-		fmt.Printf(tmpl, col.Name, col.Type, map[bool]string{true: "Yes", false: "No"}[col.Ignored])
+		fmt.Printf(tmpl, col.Name, col.Type, lo.Ternary(col.PrimaryKey, "Yes", "No "), lo.Ternary(col.Ignored, "Yes", "No "))
 	}
 	fmt.Println()
 }

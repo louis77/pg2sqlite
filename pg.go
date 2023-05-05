@@ -36,9 +36,10 @@ type TableSchema struct {
 }
 
 type TableColumn struct {
-	Name    string
-	Type    string
-	Ignored bool
+	Name       string
+	Type       string
+	Ignored    bool
+	PrimaryKey bool
 }
 
 func ValidatePG(connStr string) error {
@@ -51,6 +52,7 @@ func ValidatePG(connStr string) error {
 }
 
 func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error) {
+	// Fetch table columns
 	rows, err := pgConn.Query(context.Background(),
 		"SELECT column_name, data_type FROM information_schema.columns "+
 			"WHERE table_name = $1 "+
@@ -77,12 +79,40 @@ func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error
 		tableSchema.Cols = append(tableSchema.Cols, TableColumn{
 			Name:    columnName,
 			Type:    dataType,
-			Ignored: Contains(ignoredColumns, columnName),
+			Ignored: lo.Contains(ignoredColumns, columnName),
 		})
 		colCount++
 	}
 	if colCount == 0 {
 		return nil, fmt.Errorf("table %s doesn't exist in Postgres", tablename)
+	}
+
+	// Fetch tables primary key
+	pkcols, err := pgConn.Query(context.Background(),
+		`SELECT c.column_name, c.data_type
+FROM information_schema.table_constraints tc 
+JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_name) 
+JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema
+	AND tc.table_name = c.table_name AND ccu.column_name = c.column_name
+WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = $1`, tablename)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch primary key from Postgres table: %w", err)
+	}
+
+	defer pkcols.Close()
+
+	for pkcols.Next() {
+		var columnName string
+		var dataType string
+		if err := pkcols.Scan(&columnName, &dataType); err != nil {
+			return nil, fmt.Errorf("unable to scan primary key from Postgres table: %w", err)
+		}
+		for i, col := range tableSchema.Cols {
+			if col.Name == columnName {
+				tableSchema.Cols[i].PrimaryKey = true
+			}
+		}
 	}
 
 	return &tableSchema, nil
@@ -94,10 +124,19 @@ func LoadData(schema *TableSchema, out chan []interface{}) error {
 		if col.Ignored {
 			continue
 		}
-		colListArray = append(colListArray, fmt.Sprintf(`"%s"%s`, col.Name, lo.Ternary(strings.HasPrefix(col.Type, "jsonb"), "::text", "")))
+
+		colDecl := lo.
+			// JSON[b] columns
+			If(strings.HasPrefix(col.Type, "json"), fmt.Sprintf(`"%s"::text`, col.Name)).
+			// ARRAY columns
+			ElseIf(strings.ToLower(col.Type) == "array", fmt.Sprintf(`array_to_json("%s")::text`, col.Name)).
+			// Everything else
+			Else(fmt.Sprintf(`"%s"`, col.Name))
+
+		colListArray = append(colListArray, colDecl)
 	}
 
-	sqlStmt := fmt.Sprintf("SELECT %s FROM %s T", strings.Join(colListArray, ", "), schema.Name)
+	sqlStmt := fmt.Sprintf("SELECT %s FROM %s T", strings.Join(colListArray, ", "), formatTableName(schema.Name))
 	fmt.Println("Loading data with this statement:")
 	fmt.Println(sqlStmt)
 	fmt.Println()

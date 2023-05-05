@@ -36,6 +36,8 @@ Options:
       In case of failure, exits with status code 2
   --strict
       Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html
+  --omit-pk
+      Do not migrate PRIMARY KEY's to SQLite table
  ```
 
 ### Example
@@ -47,15 +49,15 @@ $ pg2sqlite --pg-url postgres://localhost:5432/defaultdb \
             --ignore-columns raw_hash
 
 Schema of table "daily_sales"
-Column                     | Type                     | Ignore
--------------------------- | ------------------------ | ------
-reference_id               | integer                  | No
-checkin                    | date                     | No
-checkout                   | date                     | No
-price                      | numeric                  | No
-raw_hash                   | character                | Yes
-currency                   | character                | No
-ts                         | timestamp with time zone | No
+Column                     | Type                     | PK  | Ignore
+-------------------------- | ------------------------ | --- | ------
+reference_id               | integer                  | Yes | No
+checkin                    | date                     | Yes | No
+checkout                   | date                     | Yes | No
+price                      | numeric                  | No  | No
+raw_hash                   | character                | No  | Yes
+currency                   | character                | No  | No
+ts                         | timestamp with time zone | No  | No
              
 Creating Table statement:
 CREATE TABLE daily_sales (         
@@ -64,7 +66,9 @@ CREATE TABLE daily_sales (
         checkout TEXT, 
         price REAL, 
         currency TEXT,  
-        ts TEXT )
+        ts TEXT,
+        PRIMARY KEY (reference_id, checkin, checkout) 
+)
 Does this look ok? (Y/N) y
 
 Estimated row count: 50042260
@@ -87,6 +91,7 @@ $
     - INSERTs into SQLite are now run in a single transaction, which massively increases performance
     - Add option to create tables in SQLite with STRICT table option (--strict)
     - Postgres JSON/JSONB columns will now be converted to TEXT
+    - Migrate PRIMARY KEYs by default, omit with --omit-pk
 
 ## Details
 
@@ -108,14 +113,14 @@ pg2sqlite works with a single connection to PostgreSQL and SQLite. To keep memor
 
 #### `pg2sqlite` doesn't do:
 
-`pg2sqlite` creates the bare table with its columns.
-No primary keys, foreign keys, constraints or indexes are created
-in the SQLite table.
+`pg2sqlite` creates the SQLite table with its columns and primary keys (unless --omit-pk is specified).
+No foreign keys, constraints or indexes are created in the SQLite table.
 
 
 ### TODOs
 
 - [X] Add support for Postgres JSON/JSONB columns
+- [X] Migrate Primary Keys
 - [ ] Create SQLite file if it doesn't exist
 
 

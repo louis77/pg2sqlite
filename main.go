@@ -58,6 +58,7 @@ type argT struct {
 	Verify  bool `cli:"verify" usage:"Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2" default:"false"`
 	// SQLite options
 	StrictTable bool `cli:"strict" usage:"Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html" default:"false"`
+	OmitPK      bool `cli:"omit-pk" usage:"Omit primary key from SQLite table" default:"false"`
 }
 
 func (argv *argT) AutoHelp() bool {
@@ -82,7 +83,7 @@ func run(ctx *cli.Context) error {
 
 	PrintSchema(schema)
 
-	createTableSQL, err := BuildCreateTableSQL(schema, argv.StrictTable)
+	createTableSQL, err := BuildCreateTableSQL(schema, argv.StrictTable, argv.OmitPK)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +112,14 @@ func run(ctx *cli.Context) error {
 	uiprogress.Start()
 	bar := uiprogress.AddBar(int(estimatedRows))
 	bar.AppendCompleted()
-	bar.PrependElapsed() // TODO output avg inserts per second
+
+	bar.PrependFunc(func(b *uiprogress.Bar) string {
+		avg := 0
+		if elapsed := int(b.TimeElapsed().Seconds()); elapsed > 0 {
+			avg = b.Current() / int(b.TimeElapsed().Seconds())
+		}
+		return fmt.Sprintf("%d rows/s", avg)
+	})
 
 	rowChan := make(chan []interface{}, BatchSize)
 	finished := make(chan bool)
