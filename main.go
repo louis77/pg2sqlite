@@ -111,7 +111,7 @@ func run(ctx *cli.Context) error {
 	uiprogress.Start()
 	bar := uiprogress.AddBar(int(estimatedRows))
 	bar.AppendCompleted()
-	bar.PrependElapsed()
+	bar.PrependElapsed() // TODO output avg inserts per second
 
 	rowChan := make(chan []interface{}, BatchSize)
 	finished := make(chan bool)

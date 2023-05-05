@@ -32,7 +32,8 @@ Options:
   --confirm
       Confirm prompts with Y, useful if used in script
   --verify
-      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2
+      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. 
+      In case of failure, exits with status code 2
   --strict
       Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html
  ```
@@ -81,16 +82,15 @@ $
 
 - 1.0.0
     - Initial version     
-- 1.0.1
+- 1.1.0
     - Update to Go 1.20 and latest package version
-- 1.0.2
     - INSERTs into SQLite are now run in a single transaction, which massively increases performance
     - Add option to create tables in SQLite with STRICT table option (--strict)
+    - Postgres JSON/JSONB columns will now be converted to TEXT
 
 ## Details
 
-pg2sqlite works with a single connection to PostgreSQL and SQLite. To keep memory consumption low, rows are transferred
-without buffering.
+pg2sqlite works with a single connection to PostgreSQL and SQLite. To keep memory consumption low, rows are transferred without buffering.
 
 ### Workflow
 
@@ -115,6 +115,7 @@ in the SQLite table.
 
 ### TODOs
 
+- [X] Add support for Postgres JSON/JSONB columns
 - [ ] Create SQLite file if it doesn't exist
 
 

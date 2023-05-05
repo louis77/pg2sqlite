@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/samber/lo"
 )
 
 var (
@@ -93,7 +94,7 @@ func LoadData(schema *TableSchema, out chan []interface{}) error {
 		if col.Ignored {
 			continue
 		}
-		colListArray = append(colListArray, fmt.Sprintf(`"%s"`, col.Name))
+		colListArray = append(colListArray, fmt.Sprintf(`"%s"%s`, col.Name, lo.Ternary(strings.HasPrefix(col.Type, "jsonb"), "::text", "")))
 	}
 
 	sqlStmt := fmt.Sprintf("SELECT %s FROM %s T", strings.Join(colListArray, ", "), schema.Name)
