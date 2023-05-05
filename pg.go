@@ -1,5 +1,5 @@
 /*	pg2sqlite - Migrate tables from PostgresQL to SQLite
-	Copyright (C) 2021  Louis Brauer
+	Copyright (C) Louis Brauer
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,8 +20,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v4"
 	"strings"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -43,7 +44,7 @@ func ValidatePG(connStr string) error {
 	var err error
 	pgConn, err = pgx.Connect(context.Background(), connStr)
 	if err != nil {
-		return fmt.Errorf("Unable to connect to Postgres database: %w\n", err)
+		return fmt.Errorf("unable to connect to Postgres database: %w", err)
 	}
 	return nil
 }
@@ -55,7 +56,7 @@ func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error
 			"ORDER BY ordinal_position", tablename)
 
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch columns from Postgres table: %w\n", err)
+		return nil, fmt.Errorf("unable to fetch columns from Postgres table: %w", err)
 	}
 
 	defer rows.Close()
@@ -70,7 +71,7 @@ func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error
 		var columnName string
 		var dataType string
 		if err := rows.Scan(&columnName, &dataType); err != nil {
-			return nil, fmt.Errorf("Unable to scan columns from Postgres table: %w\n", err)
+			return nil, fmt.Errorf("unable to scan columns from Postgres table: %w", err)
 		}
 		tableSchema.Cols = append(tableSchema.Cols, TableColumn{
 			Name:    columnName,

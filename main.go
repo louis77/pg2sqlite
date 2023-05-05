@@ -1,5 +1,5 @@
 /*	pg2sqlite - Migrate tables from PostgreSQL to SQLite
-	Copyright (C) 2021  Louis Brauer
+	Copyright (C) Louis Brauer
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ var Version string
 
 const AppName = "pg2sqlite"
 const Copyright = "Copyright © Louis Brauer <louis@brauer.family>"
+const BatchSize = 1000000
 
 type stringListDecoder struct {
 	List []string
@@ -110,17 +111,26 @@ func run(ctx *cli.Context) error {
 	bar.AppendCompleted()
 	bar.PrependElapsed()
 
-	rowChan := make(chan []interface{})
+	rowChan := make(chan []interface{}, BatchSize)
 	finished := make(chan bool)
 	transferredRows := uint64(0)
 
 	go func() {
+		tx, err := sqliteDb.Begin()
+		if err != nil {
+			log.Fatal("unable to begin transaction on sqlite:", err)
+		}
+
 		for row := range rowChan {
-			if err := InsertRow(schema.Name, row); err != nil {
+			if err := InsertRow(tx, schema.Name, row); err != nil {
+				tx.Rollback()
 				log.Fatalln("error inserting a row:", err)
 			}
 			transferredRows++
 			bar.Incr()
+		}
+		if err := tx.Commit(); err != nil {
+			log.Fatalln("error committing data to sqlite:", err)
 		}
 		finished <- true
 	}()

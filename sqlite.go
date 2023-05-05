@@ -1,5 +1,5 @@
 /*	pg2sqlite - Migrate tables from PostgresQL to SQLite
-	Copyright (C) 2021  Louis Brauer
+	Copyright (C) Louis Brauer
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,10 +20,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 	"strings"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type typeMap map[string]string
@@ -47,7 +48,7 @@ var (
 func ValidateSqlite(filename, tablename string, ignoreExistingTable bool) error {
 	_, err := os.Stat(filename)
 	if err != nil {
-		return fmt.Errorf("Unable to access sqlite3 file: %w\n", err)
+		return fmt.Errorf("unable to access sqlite3 file: %w", err)
 	}
 
 	connStr := fmt.Sprintf("file:%s", filename)
@@ -127,10 +128,10 @@ func CloseSqlite() error {
 	return sqliteDb.Close()
 }
 
-func InsertRow(tablename string, vals []interface{}) error {
+func InsertRow(tx *sql.Tx, tablename string, vals []interface{}) error {
 	placeholder := strings.Join(strings.Split(strings.Repeat("?", len(vals)), ""), ", ")
 
-	result, err := sqliteDb.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%s)", tablename, placeholder), vals...)
+	result, err := tx.Exec(fmt.Sprintf("INSERT INTO %s VALUES (%s)", tablename, placeholder), vals...)
 	if err != nil {
 		return err
 	}
