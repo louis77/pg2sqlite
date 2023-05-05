@@ -92,6 +92,7 @@ $
     - Add option to create tables in SQLite with STRICT table option (--strict)
     - Postgres JSON/JSONB columns will now be converted to TEXT
     - Migrate PRIMARY KEYs by default, omit with --omit-pk
+    - The schema name of the PG table must be specified with --schema
 
 ## Details
 

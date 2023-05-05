@@ -31,8 +31,9 @@ var (
 )
 
 type TableSchema struct {
-	Name string
-	Cols []TableColumn
+	Name   string
+	Schema string
+	Cols   []TableColumn
 }
 
 type TableColumn struct {
@@ -51,12 +52,13 @@ func ValidatePG(connStr string) error {
 	return nil
 }
 
-func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error) {
+func FetchSchema(schemaname string, tablename string, ignoredColumns []string) (*TableSchema, error) {
 	// Fetch table columns
 	rows, err := pgConn.Query(context.Background(),
 		"SELECT column_name, data_type FROM information_schema.columns "+
 			"WHERE table_name = $1 "+
-			"ORDER BY ordinal_position", tablename)
+			"AND table_schema = $2 "+
+			"ORDER BY ordinal_position", tablename, schemaname)
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch columns from Postgres table: %w", err)
@@ -65,7 +67,8 @@ func FetchSchema(tablename string, ignoredColumns []string) (*TableSchema, error
 	defer rows.Close()
 
 	tableSchema := TableSchema{
-		Name: tablename,
+		Name:   tablename,
+		Schema: schemaname,
 	}
 
 	colCount := 0
@@ -119,24 +122,21 @@ WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = $1`, tablename)
 }
 
 func LoadData(schema *TableSchema, out chan []interface{}) error {
-	var colListArray []string
-	for _, col := range schema.Cols {
+	colListArray := lo.FilterMap(schema.Cols, func(col TableColumn, index int) (string, bool) {
 		if col.Ignored {
-			continue
+			return "", false
 		}
 
-		colDecl := lo.
+		return lo.
 			// JSON[b] columns
 			If(strings.HasPrefix(col.Type, "json"), fmt.Sprintf(`"%s"::text`, col.Name)).
 			// ARRAY columns
 			ElseIf(strings.ToLower(col.Type) == "array", fmt.Sprintf(`array_to_json("%s")::text`, col.Name)).
 			// Everything else
-			Else(fmt.Sprintf(`"%s"`, col.Name))
+			Else(fmt.Sprintf(`"%s"`, col.Name)), true
+	})
 
-		colListArray = append(colListArray, colDecl)
-	}
-
-	sqlStmt := fmt.Sprintf("SELECT %s FROM %s T", strings.Join(colListArray, ", "), formatTableName(schema.Name))
+	sqlStmt := fmt.Sprintf("SELECT %s FROM %s.%s T", strings.Join(colListArray, ", "), formatTableName(schema.Schema), formatTableName(schema.Name))
 	fmt.Println("Loading data with this statement:")
 	fmt.Println(sqlStmt)
 	fmt.Println()

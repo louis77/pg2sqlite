@@ -50,6 +50,7 @@ type argT struct {
 	PGURL     string `cli:"*pg-url" usage:"Postgres connection string (i.e. postgres://localhost:5432/mydb)"`
 	SLFile    string `cli:"*sqlite-file" usage:"Path to SQLite database file (i.e. mydatabase.db)"`
 	Tablename string `cli:"*t,table" usage:"Name of table to export"`
+	Schema    string `cli:"*s,schema" usage:"Name of table schema" default:""`
 	// Change behaviour
 	IgnoreColumns     stringListDecoder `cli:"ignore-columns" usage:"comma-separated list of columns to ignore" default:""`
 	DropTableIfExists bool              `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
@@ -76,7 +77,7 @@ func run(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	schema, err := FetchSchema(argv.Tablename, argv.IgnoreColumns.List)
+	schema, err := FetchSchema(argv.Schema, argv.Tablename, argv.IgnoreColumns.List)
 	if err != nil {
 		log.Fatal(err)
 	}
