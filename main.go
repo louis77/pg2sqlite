@@ -56,6 +56,8 @@ type argT struct {
 	// Comfort options
 	Confirm bool `cli:"confirm" usage:"Confirm prompts with Y, useful if used in script" default:""`
 	Verify  bool `cli:"verify" usage:"Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2" default:"false"`
+	// SQLite options
+	StrictTable bool `cli:"strict" usage:"Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html" default:"false"`
 }
 
 func (argv *argT) AutoHelp() bool {
@@ -80,7 +82,7 @@ func run(ctx *cli.Context) error {
 
 	PrintSchema(schema)
 
-	createTableSQL, err := BuildCreateTableSQL(schema)
+	createTableSQL, err := BuildCreateTableSQL(schema, argv.StrictTable)
 	if err != nil {
 		log.Fatal(err)
 	}

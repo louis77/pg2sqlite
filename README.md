@@ -33,6 +33,8 @@ Options:
       Confirm prompts with Y, useful if used in script
   --verify
       Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2
+  --strict
+      Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html
  ```
 
 ### Example
@@ -80,7 +82,10 @@ $
 - 1.0.0
     - Initial version     
 - 1.0.1
-    - Update to Go 1.20 and latest package versions
+    - Update to Go 1.20 and latest package version
+- 1.0.2
+    - INSERTs into SQLite are now run in a single transaction, which massively increases performance
+    - Add option to create tables in SQLite with STRICT table option (--strict)
 
 ## Details
 

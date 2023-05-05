@@ -70,7 +70,7 @@ func ValidateSqlite(filename, tablename string, ignoreExistingTable bool) error 
 	return nil
 }
 
-func BuildCreateTableSQL(schema *TableSchema) (string, error) {
+func BuildCreateTableSQL(schema *TableSchema, strict bool) (string, error) {
 	newSchema := TableSchema{
 		Name: schema.Name,
 	}
@@ -87,6 +87,9 @@ func BuildCreateTableSQL(schema *TableSchema) (string, error) {
 	}
 
 	sqlTmpl := "CREATE TABLE " + schema.Name + " ( %s )"
+	if strict {
+		sqlTmpl += " STRICT"
+	}
 	var colStrings []string
 	for _, col := range newSchema.Cols {
 		colStrings = append(colStrings, "\t"+col.Name+" "+col.Type)
