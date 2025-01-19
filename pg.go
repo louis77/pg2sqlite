@@ -41,6 +41,9 @@ type TableColumn struct {
 	Type       string
 	Ignored    bool
 	PrimaryKey bool
+	FK         bool
+	FKTable    string
+	FKColumn   string
 }
 
 func ValidatePG(connStr string) error {
@@ -118,6 +121,45 @@ WHERE constraint_type = 'PRIMARY KEY' and tc.table_name = $1`, tablename)
 		}
 	}
 
+	// Fetch table foreign keys
+	fkcols, err := pgConn.Query(context.Background(),
+		`SELECT
+    kcu.column_name, 
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM 
+    information_schema.table_constraints AS tc 
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name=$1 
+    AND tc.table_schema = $2`, tablename, schemaname)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch foreign keys from Postgres table: %w", err)
+	}
+
+	defer fkcols.Close()
+
+	for fkcols.Next() {
+		var columnName string
+		var foreignTableName string
+		var foreignColumnName string
+		if err := fkcols.Scan(&columnName, &foreignTableName, &foreignColumnName); err != nil {
+			return nil, fmt.Errorf("unable to scan foreign key from Postgres table: %w", err)
+		}
+		for i, col := range tableSchema.Cols {
+			if col.Name == columnName {
+				tableSchema.Cols[i].FK = true
+				tableSchema.Cols[i].FKTable = foreignTableName
+				tableSchema.Cols[i].FKColumn = foreignColumnName
+			}
+		}
+	}
+
 	return &tableSchema, nil
 }
 
@@ -126,10 +168,10 @@ func LoadData(schema *TableSchema, out chan []interface{}) error {
 		if col.Ignored {
 			return "", false
 		}
-
+		fmt.Println(col.Type)
 		return lo.
 			// JSON[b] columns
-			If(strings.HasPrefix(col.Type, "json"), fmt.Sprintf(`"%s"::text`, col.Name)).
+			If(strings.HasPrefix(col.Type, "json") || col.Type == "uuid", fmt.Sprintf(`"%s"::text`, col.Name)).
 			// ARRAY columns
 			ElseIf(strings.ToLower(col.Type) == "array", fmt.Sprintf(`array_to_json("%s")::text`, col.Name)).
 			// Everything else

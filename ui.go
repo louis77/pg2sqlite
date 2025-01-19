@@ -60,12 +60,15 @@ func PrintSchema(schema *TableSchema) {
 		}
 	}
 
-	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s | %s | %s\n"
-	fmt.Printf(tmpl, "Column", "Type", "PK ", "Ignore") // Header
-	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength), strings.Repeat("-", 3), strings.Repeat("-", 6))
+	tmpl := "%-" + strconv.Itoa(maxColLength) + "s | %-" + strconv.Itoa(maxTypeLength) + "s | %s | %s | %s\n"
+	fmt.Printf(tmpl, "Column", "Type", "PK ", "Ignore", "FK") // Header
+	fmt.Printf(tmpl, strings.Repeat("-", maxColLength), strings.Repeat("-", maxTypeLength), strings.Repeat("-", 3), strings.Repeat("-", 6), strings.Repeat("-", 6))
 
 	for _, col := range schema.Cols {
-		fmt.Printf(tmpl, col.Name, col.Type, lo.Ternary(col.PrimaryKey, "Yes", "No "), lo.Ternary(col.Ignored, "Yes", "No "))
+		fmt.Printf(tmpl, col.Name, col.Type,
+			lo.Ternary(col.PrimaryKey, "Yes", "No "),
+			lo.Ternary(col.Ignored, "Yes   ", "No    "),
+			lo.Ternary(col.FK, fmt.Sprintf("%s(%s)", col.FKTable, col.FKColumn), ""))
 	}
 	fmt.Println()
 }

@@ -54,12 +54,14 @@ type argT struct {
 	// Change behaviour
 	IgnoreColumns     stringListDecoder `cli:"ignore-columns" usage:"comma-separated list of columns to ignore" default:""`
 	DropTableIfExists bool              `cli:"drop-table-if-exists" usage:"DANGER: Drop target table if it already exists" default:"false"`
+	OmitData          bool              `cli:"omit-data" usage:"Only migrate table definitions, omit data" default:"false"`
 	// Comfort options
 	Confirm bool `cli:"confirm" usage:"Confirm prompts with Y, useful if used in script" default:""`
 	Verify  bool `cli:"verify" usage:"Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2" default:"false"`
 	// SQLite options
 	StrictTable bool `cli:"strict" usage:"Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html" default:"false"`
 	OmitPK      bool `cli:"omit-pk" usage:"Omit primary key from SQLite table" default:"false"`
+	OmitFK      bool `cli:"omit-fk" usage:"Omit foreign keys from SQLite table" default:"false"`
 }
 
 func (argv *argT) AutoHelp() bool {
@@ -84,7 +86,7 @@ func run(ctx *cli.Context) error {
 
 	PrintSchema(schema)
 
-	createTableSQL, err := BuildCreateTableSQL(schema, argv.StrictTable, argv.OmitPK)
+	createTableSQL, err := BuildCreateTableSQL(schema, argv.StrictTable, argv.OmitPK, argv.OmitFK)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,9 +106,23 @@ func run(ctx *cli.Context) error {
 		log.Fatal(err)
 	}
 
+	if !argv.OmitData {
+		if err := migrateData(schema, argv.Verify); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if err := CloseSqlite(); err != nil {
+		log.Println("Unable to close Sqlite database", err)
+	}
+
+	return nil
+}
+
+func migrateData(schema *TableSchema, verify bool) error {
 	estimatedRows, err := EstimateRows(schema.Name)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	fmt.Printf("Estimated row count: %d\n", estimatedRows)
 
@@ -157,7 +173,7 @@ func run(ctx *cli.Context) error {
 	fmt.Println("Finished.")
 	fmt.Println()
 
-	if argv.Verify {
+	if verify {
 		fmt.Println("Verifying number of rows, this could take a while...")
 		rowcount, err := CountRows(schema.Name)
 		if err != nil {
@@ -165,14 +181,9 @@ func run(ctx *cli.Context) error {
 		}
 		if rowcount != transferredRows {
 			log.Println("VERIFICATION FAILED")
-			log.Printf("Discrepancy: counted rows: %d, rows in SQLite table: %d", transferredRows, rowcount)
-			os.Exit(2)
+			log.Fatalf("Discrepancy: counted rows: %d, rows in SQLite table: %d", transferredRows, rowcount)
 		}
 		fmt.Println("OK, row counts match")
-	}
-
-	if err := CloseSqlite(); err != nil {
-		log.Println("Unable to close Sqlite database", err)
 	}
 
 	return nil

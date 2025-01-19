@@ -71,7 +71,7 @@ func ValidateSqlite(filename, tablename string, ignoreExistingTable bool) error 
 	return nil
 }
 
-func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK bool) (string, error) {
+func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK, omitFK bool) (string, error) {
 	newSchema := TableSchema{
 		Name: schema.Name,
 	}
@@ -84,7 +84,15 @@ func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK bool) (string,
 		if err != nil {
 			return "", fmt.Errorf("error during column type mapping: %w", err)
 		}
-		newSchema.Cols = append(newSchema.Cols, TableColumn{Name: col.Name, Type: newType, PrimaryKey: col.PrimaryKey})
+		col := TableColumn{
+			Name:       col.Name,
+			Type:       newType,
+			PrimaryKey: col.PrimaryKey,
+			FK:         col.FK,
+			FKTable:    col.FKTable,
+			FKColumn:   col.FKColumn,
+		}
+		newSchema.Cols = append(newSchema.Cols, col)
 	}
 
 	sqlTmpl := "CREATE TABLE " + formatTableName(schema.Name) + " ( %s )"
@@ -93,7 +101,7 @@ func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK bool) (string,
 	}
 	var colStrings []string
 	for _, col := range newSchema.Cols {
-		colStrings = append(colStrings, "\t\""+col.Name+"\" "+col.Type)
+		colStrings = append(colStrings, "\t"+formatColumnName(col.Name)+" "+col.Type)
 	}
 
 	if !omitPK {
@@ -101,12 +109,28 @@ func BuildCreateTableSQL(schema *TableSchema, strict bool, omitPK bool) (string,
 			if !col.PrimaryKey {
 				return "", false
 			}
-			return col.Name, true
+			return formatTableName(col.Name), true
 		})
 
 		if len(pkContraint) > 0 {
 			colStrings = append(colStrings, "\tPRIMARY KEY ("+strings.Join(pkContraint, ", ")+")")
 		}
+	}
+
+	if !omitFK {
+		fkConstraints := lo.FilterMap(newSchema.Cols, func(col TableColumn, index int) (string, bool) {
+			if !col.FK {
+				return "", false
+			}
+			return fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)",
+				formatColumnName(col.Name),
+				formatTableName(col.FKTable),
+				formatColumnName(col.FKColumn)), true
+		})
+
+		lo.ForEach(fkConstraints, func(constraint string, index int) {
+			colStrings = append(colStrings, "\t"+constraint)
+		})
 	}
 
 	sqlCreateString := fmt.Sprintf(sqlTmpl, strings.Join(colStrings, ", \n"))
@@ -192,4 +216,8 @@ func CountRows(tablename string) (uint64, error) {
 
 func formatTableName(table string) string {
 	return fmt.Sprintf("\"%s\"", table)
+}
+
+func formatColumnName(column string) string {
+	return fmt.Sprintf("\"%s\"", column)
 }

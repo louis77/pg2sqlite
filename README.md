@@ -14,6 +14,8 @@ $ go install codeberg.org/louis77/pg2sqlite
 
 ```
 $ pg2sqlite -h
+pg2sqlite v1.1.0
+Copyright © Louis Brauer <louis@brauer.family>
 
 Options:
 
@@ -25,19 +27,24 @@ Options:
       *Path to SQLite database file (i.e. mydatabase.db)
   -t, --table
       *Name of table to export
+  -s, --schema
+      *Name of table schema
   --ignore-columns
       comma-separated list of columns to ignore
   --drop-table-if-exists
       DANGER: Drop target table if it already exists
+  --omit-data
+      Only migrate table definitions, omit data
   --confirm
       Confirm prompts with Y, useful if used in script
   --verify
-      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. 
-      In case of failure, exits with status code 2
+      Verify that the number of rows inserted into SQLite equals the number of rows loaded from Postgres. In case of failure, exits with status code 2
   --strict
       Use STRICT table option for SQLite, see https://www.sqlite.org/stricttables.html
   --omit-pk
-      Do not migrate PRIMARY KEY's to SQLite table
+      Omit primary key from SQLite table
+  --omit-fk
+      Omit foreign keys from SQLite table 
  ```
 
 ### Example
@@ -75,7 +82,7 @@ Estimated row count: 50042260
 Loading data with this statement:
 SELECT "reference_id", "checkin", "checkout", "price", "currency", "external_id", "ts" FROM results_y2021m02 T
 
-  24s [==>-----------------------------------------------------------------]   3%
+  349783 rows/s [==>-----------------------------------------------------------------]   3%
 
 Finished.
 
@@ -91,8 +98,9 @@ $
     - INSERTs into SQLite are now run in a single transaction, which massively increases performance
     - Add option to create tables in SQLite with STRICT table option (--strict)
     - Postgres JSON/JSONB columns will now be converted to TEXT
-    - Migrate PRIMARY KEYs by default, omit with --omit-pk
     - The schema name of the PG table must be specified with --schema
+    - Migrate PRIMARY KEYs by default, omit with --omit-pk
+    - Migrate FOREIGN KEYs by default, omit with --omit fk
 
 ## Details
 
