@@ -7,7 +7,7 @@
 ### From source
 
 ```shell
-$ go install codeberg.org/louis77/pg2sqlite
+$ go install github.com/louis77/pg2sqlite
 ```
 
 ## Usage
